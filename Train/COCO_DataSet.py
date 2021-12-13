@@ -209,7 +209,7 @@ class COCODataSet(Dataset):
             # 定位数据预设
             ground_box = [0, 0, scale_width, scale_height, 1]
             ground_box.extend(class_list)
-            modulus = [scale_adjust_modulu, self.input_size * xmin, self.input_size * ymin, self.input_size * xmax, self.input_size * ymax, 0]
+            modulus = [scale_adjust_modulu, self.input_size * xmin, self.input_size * ymin, self.input_size * xmax, self.input_size * ymax, max_iou_index]
 
             if max_iou_index < 3:
                 # 已经使用过的需要标记
@@ -220,7 +220,7 @@ class COCODataSet(Dataset):
                 center_x = centerX * small_feature_size
                 ground_box[0] = center_x - small_indexCol
                 small_ground_truth[small_indexRow][small_indexCol][max_iou_index] = np.array(ground_box)
-                modulus[5] = max_iou_index
+                #modulus[5] = max_iou_index
                 small_positive_modulus[small_indexRow][small_indexCol][max_iou_index] = np.array(modulus)
                 small_positive_modulus_mark[small_indexRow][small_indexCol][max_iou_index] = np.ones([6])
                 small_anchor_mark_negative[small_indexRow][small_indexCol][max_iou_index][4] = 0
@@ -232,7 +232,7 @@ class COCODataSet(Dataset):
                 center_x = centerX * middle_feature_size
                 ground_box[0] = center_x - middle_indexCol # offsetX
                 middle_ground_truth[middle_indexRow][middle_indexCol][max_iou_index - 3] = np.array(ground_box)
-                modulus[5] = max_iou_index - 3
+                #modulus[5] = max_iou_index
                 middle_positive_modulus[middle_indexRow][middle_indexCol][max_iou_index - 3] = np.array(modulus)
                 middle_positive_modulus_mark[middle_indexRow][middle_indexCol][max_iou_index- 3] = np.ones([6])
                 middle_anchor_mark_negative[middle_indexRow][middle_indexCol][max_iou_index - 3][4] = 0
@@ -244,7 +244,7 @@ class COCODataSet(Dataset):
                 center_x = centerX * big_feature_size
                 ground_box[0] = center_x - big_indexCol
                 big_ground_truth[big_indexRow][big_indexCol][max_iou_index - 6] = np.array(ground_box, dtype=np.float)
-                modulus[5] = max_iou_index - 6
+                #modulus[5] = max_iou_index - 6
                 big_positive_modulus[big_indexRow][big_indexCol][max_iou_index - 6] = np.array(modulus)
                 big_positive_modulus_mark[big_indexRow][big_indexCol][max_iou_index - 6] = np.ones([6])
                 big_anchor_mark_negative[big_indexRow][big_indexCol][max_iou_index - 6][4] = 0

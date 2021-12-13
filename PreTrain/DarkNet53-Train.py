@@ -11,11 +11,11 @@ else:
 lr = 3e-4
 img_size = 256
 momentum = 0.9
-batch_size = 16
-epoch_num = 1000
+batch_size = 32
+epoch_num = 500
 weight_decay = 5e-4
 min_val_loss = 9999999999
-epoch_interval = 1
+epoch_interval = 10
 class_num = 80
 num_workers = 4
 
@@ -184,5 +184,9 @@ if __name__ == "__main__":
                 writer.add_histogram(name + '_grad', layer, epoch)
 
         writer.add_scalar('Train/Loss_sum', epoch_train_loss, epoch)
+        writer.add_scalar('Train/Top_Acc_1', epoch_train_top1_acc / train_loader.__len__(), epoch)
+        writer.add_scalar('Train/Top_Acc_5', epoch_train_top5_acc / train_loader.__len__(), epoch)
         writer.add_scalar('Val/Loss_sum', epoch_val_loss, epoch)
+        writer.add_scalar('Val/Top_Acc_1', epoch_val_top1_acc / val_loader.__len__(), epoch)
+        writer.add_scalar('Val/Top_Acc_5', epoch_val_top5_acc / val_loader.__len__(), epoch)
     writer.close()

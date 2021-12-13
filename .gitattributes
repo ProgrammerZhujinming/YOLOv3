@@ -1,1 +1,2 @@
 *.pth filter=lfs diff=lfs merge=lfs -text
+./Train/weights/YOLO_V3_final.pth filter=lfs diff=lfs merge=lfs -text

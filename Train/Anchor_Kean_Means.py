@@ -42,7 +42,8 @@ def kmeans(boxes, k, dist=np.median, seed=1):
 
     return clusters, nearest_clusters, distances
 
-
+'''
+# COCO
 import os
 import cv2
 import time
@@ -85,6 +86,82 @@ colors = ['peru', 'dodgerblue', 'turquoise', 'brown', 'red', 'lightsalmon', 'ora
 point_x = [list() for i in range(k)]
 point_y = [list() for i in range(k)]
 
+for index in range(len(nearest_clusters)):
+    point_x[nearest_clusters[index]].append(bounding_boxes[index][0])
+    point_y[nearest_clusters[index]].append(bounding_boxes[index][1])
+
+for cluster_index in range(k):
+    plt.scatter(point_x[cluster_index], point_y[cluster_index], color=colors[cluster_index])
+
+for box_index in range(len(bounding_boxes)):
+    if box_index > 20000:
+        break
+    color = colors[nearest_clusters[box_index]]
+    plt.scatter(bounding_boxes[box_index][0], bounding_boxes[box_index][1], color=color)
+
+clusters.sort(lambda: x[0] * x[1] for x in clusters)
+plt.show()
+print(clusters)
+'''
+
+import os
+import cv2
+import time
+import image
+import xml.etree.ElementTree as ET
+target_size = 608
+k = 9
+annotations_path = "../DataSet/VOC2007+2012/Train/Annotations"
+imgs_path = "../DataSet/VOC2007+2012/Train/JPEGImages"
+annotations_name = os.listdir(annotations_path)
+bounding_boxes = []
+classes_file = "../DataSet/VOC2007+2012/class.data"
+class_index = 0
+class_dict = {}
+with open(classes_file, 'r') as file:
+    for class_name in file:
+        class_name = class_name.replace('\n', '')
+        class_dict[class_name] = class_index  # 根据类别名制作索引
+        class_index = class_index + 1
+
+for annotation_name in annotations_name:
+    img_path = os.path.join(imgs_path, annotation_name.replace(".xml", ".jpg"))
+    img = cv2.imread(img_path)
+
+    coords = []
+
+    tree = ET.parse(os.path.join(annotations_path, annotation_name))
+    annotation_xml = tree.getroot()
+
+    objects_xml = annotation_xml.findall("object")
+    for object_xml in objects_xml:
+        # 获取目标的名字
+        bnd_xml = object_xml.find("bndbox")
+        class_name = object_xml.find("name").text
+
+        if class_name not in class_dict:  # 不属于我们规定的类
+            continue
+        xmin = (int)((float)(bnd_xml.find("xmin").text))
+        ymin = (int)((float)(bnd_xml.find("ymin").text))
+        xmax = (int)((float)(bnd_xml.find("xmax").text))
+        ymax = (int)((float)(bnd_xml.find("ymax").text))
+        coords.append([xmin, ymin, xmax, ymax, class_dict[class_name]])
+    img, coords = image.resize_image_with_coords(img, target_size, target_size, coords)
+
+    for coord in coords:
+        coord[0] = round(coord[0] * target_size)
+        coord[1] = round(coord[1] * target_size)
+        coord[2] = round(coord[2] * target_size)
+        coord[3] = round(coord[3] * target_size)
+        box = [coord[2] - coord[0], coord[3] - coord[1]]
+        bounding_boxes.append(box)
+
+clusters, nearest_clusters, distances = kmeans(np.array(bounding_boxes), k, seed=int(time.time()))
+import matplotlib.pyplot as plt
+colors = ['peru', 'dodgerblue', 'turquoise', 'brown', 'red', 'lightsalmon', 'orange', 'springgreen' , 'orchid']
+point_x = [list() for i in range(k)]
+point_y = [list() for i in range(k)]
+
 '''
 for index in range(len(nearest_clusters)):
     point_x[nearest_clusters[index]].append(bounding_boxes[index][0])
@@ -100,14 +177,9 @@ for box_index in range(len(bounding_boxes)):
     color = colors[nearest_clusters[box_index]]
     plt.scatter(bounding_boxes[box_index][0], bounding_boxes[box_index][1], color=color)
 '''
-clusters.sort(lambda: x[0] * x[1] for x in clusters)
+#clusters.sort(lambda: x[0] * x[1] for x in clusters)
 plt.show()
 print(clusters)
-
-
-
-
-
 
 
 

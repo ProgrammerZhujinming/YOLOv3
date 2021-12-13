@@ -173,7 +173,7 @@ class YOLO_V3(nn.Module):
         x_predict_bigger = x_predict_bigger.view([batch_size, width, height, 3, 5 + self.class_num])
         #x_predict_bigger = torch.cat([self.sigmoid(x_predict_bigger[...,0:2]), x_predict_bigger[...,2:4], self.sigmoid(x_predict_bigger[...,4:])], dim=4)
         x_predict_bigger[...,0:2] = self.sigmoid(x_predict_bigger[...,0:2])
-        #x_predict_bigger[...,4:] = self.sigmoid(x_predict_bigger[...,4:])
+        x_predict_bigger[...,4] = self.sigmoid(x_predict_bigger[...,4])
 
         # middle target
         x_bigger_branch = self.neck_bigger_middle(x_bigger_branch)
@@ -183,7 +183,7 @@ class YOLO_V3(nn.Module):
         x_predict_middle = x_predict_middle.permute(0, 2, 3, 1)
         x_predict_middle = x_predict_middle.view([batch_size, width, height, 3, 5 + self.class_num])
         x_predict_middle[..., 0:2] = self.sigmoid(x_predict_middle[..., 0:2])
-        #x_predict_middle[..., 4:] = self.sigmoid(x_predict_middle[..., 4:])
+        x_predict_middle[..., 4] = self.sigmoid(x_predict_middle[..., 4])
 
         # small target
         x_middle_branch = self.neck_middle_small(x_middle_branch)
@@ -193,7 +193,7 @@ class YOLO_V3(nn.Module):
         x_predict_small = x_predict_small.permute(0, 2, 3, 1)
         x_predict_small = x_predict_small.view([batch_size, width, height, 3, 5 + self.class_num])
         x_predict_small[..., 0:2] = self.sigmoid(x_predict_small[..., 0:2])
-        #x_predict_small[..., 4:] = self.sigmoid(x_predict_small[..., 4:])
+        x_predict_small[..., 4] = self.sigmoid(x_predict_small[..., 4])
 
         return x_predict_small, x_predict_middle, x_predict_bigger
 
@@ -211,7 +211,7 @@ class YOLO_V3(nn.Module):
             elif isinstance(m, CBL):
                 m.weight_init()
 
-        net_param_dict = torch.load(pre_weight_file)
+        net_param_dict = torch.load(pre_weight_file, map_location=torch.device("cpu"))['min_loss_model']
         self_param_dict = self.state_dict()
         for name, layer in self.named_parameters():
             if name in net_param_dict:

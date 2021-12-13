@@ -1,24 +1,36 @@
-#------step1: 导入网络------
-from Train.YOLO_V3_Model import YOLO_V1
-YOLO = YOLO_V1().cuda()
-
-#------step:2 读取权重文件------
+#------step0: common defination------
 import torch
-weight_file_name = "./YOLO_V1_200.pth"
-YOLO.load_state_dict(torch.load(weight_file_name)["model"])
-YOLO.eval()
+from datetime import datetime
 
-#------step:3 类别索引与类别名的映射------
-class_file_name = "./VOC2007/Train/class.data"
-class_index_Name = {}
-classIndex = 0
+if torch.cuda.is_available():
+    device = torch.device("cuda:0")
+else:
+    device = torch.device("cpu")
+
+class_num = 20
+input_size_index = 9
+img_sizes = [320, 352, 384, 416, 448, 480, 512, 544, 576, 608]
+anchor_boxes = [[21, 29], [35, 80], [61, 45],  [68, 143], [124, 95], [130, 229], [226, 339], [298, 174], [452, 384]]
+weight_file = "../Train/weights/YOLO_V3_200.pth"
+#------step1: model------
+from Train.YOLO_V3_Model import YOLO_V3
+from model import set_freeze_by_idxs, unfreeze_by_idxs
+YOLO_V3 = YOLO_V3(class_num=class_num)
+YOLO_V3.load_state_dict(torch.load(weight_file, map_location=torch.device("cpu"))["model"])
+YOLO_V3 = YOLO_V3.to(device=device)
+YOLO_V3.eval()
+
+#------step:2 class_name_dict------
+class_file_name = "../DataSet/VOC2007+2012/class.data"
+class_index_name = {}
+class_index = 0
 with open(class_file_name, 'r') as f:
     for line in f:
         line = line.replace('\n', '')
-        class_index_Name[classIndex] = line  # 根据类别名制作索引
-        classIndex = classIndex + 1
+        class_index_name[class_index] = line  # 根据类别名制作索引
+        class_index = class_index + 1
 
-#------step:4 NMS算法处理输出结果------
+#------step:4 NMS------
 
 def iou(box_one, box_two):
     LX = max(box_one[0], box_two[0])
@@ -29,9 +41,102 @@ def iou(box_one, box_two):
         return 0
     return (RX - LX) * (RY - LY) / ((box_one[2]-box_one[0]) * (box_one[3] - box_one[1]) + (box_two[2]-box_two[0]) * (box_two[3] - box_two[1]))
 
+import math
 import numpy as np
-def NMS(bounding_boxes,S=7,B=2,img_size=448,confidence_threshold=0.2,iou_threshold=0.3):
-    bounding_boxes = bounding_boxes.cpu().detach().numpy().tolist()
+def NMS_MultiSacle(small_bounding_boxes, middle_bounding_boxes, big_bounding_boxes, input_size, anchor_boxes, small_downsample = 8, middle_downsample = 16, big_downsample = 32, confidence_threshold=0.8, iou_threshold=0.5):
+    predict_boxes = []
+    nms_boxes = []
+
+    # batch_size * height * witdh * 3 * (5 + class_num)
+    small_bounding_boxes = small_bounding_boxes.cpu().detach().numpy()
+    middle_bounding_boxes = middle_bounding_boxes.cpu().detach().numpy()
+    big_bounding_boxes = big_bounding_boxes.cpu().detach().numpy()
+
+    small_grids_num = input_size // small_downsample
+    middle_grids_num = input_size // middle_downsample
+    big_grids_num = input_size // big_downsample
+
+    for batch_data in small_bounding_boxes:
+        for row_index in range(small_grids_num):
+            for col_index in range(small_grids_num):
+                small_gird_predict = batch_data[row_index][col_index]
+                max_confidence_index = np.argmax(small_gird_predict[::, 4])
+                #print(small_gird_predict)
+                #print(max_confidence_index)
+                small_predict = small_gird_predict[max_confidence_index]
+                confidence = small_predict[4]
+                if confidence < confidence_threshold:
+                    continue
+                center_x = (col_index + small_predict[0]) * small_downsample
+                center_y = (row_index + small_predict[1]) * small_downsample
+                width = anchor_boxes[max_confidence_index][0] * math.pow(math.e, small_predict[2])
+                height = anchor_boxes[max_confidence_index][1] * math.pow(math.e, small_predict[3])
+                xmin = max(0, round(center_x - width / 2))
+                ymin = max(0, round(center_y - height / 2))
+                xmax = min(input_size - 1, round(center_x + width / 2))
+                ymax = min(input_size - 1, round(center_y + height / 2))
+                class_index = np.argmax(small_predict[5:])
+                predict_box = [xmin, ymin, xmax, ymax, confidence, class_index]
+                predict_boxes.append(predict_box)
+
+    for batch_data in middle_bounding_boxes:
+        for row_index in range(middle_grids_num):
+            for col_index in range(middle_grids_num):
+                middle_gird_predict = batch_data[row_index][col_index]
+                max_confidence_index = np.argmax(middle_gird_predict[::, 4])
+                middle_predict = middle_gird_predict[max_confidence_index]
+                confidence = middle_predict[4]
+                if confidence < confidence_threshold:
+                    continue
+                center_x = (col_index + middle_predict[0]) * middle_downsample
+                center_y = (row_index + middle_predict[1]) * middle_downsample
+                width = anchor_boxes[3 + max_confidence_index][0] * math.pow(math.e, middle_predict[2])
+                height = anchor_boxes[3 + max_confidence_index][1] * math.pow(math.e, middle_predict[3])
+                xmin = max(0, round(center_x - width / 2))
+                ymin = max(0, round(center_y - height / 2))
+                xmax = min(input_size - 1, round(center_x + width / 2))
+                ymax = min(input_size - 1, round(center_y + height / 2))
+                class_index = np.argmax(middle_predict[5:])
+                predict_box = [xmin, ymin, xmax, ymax, confidence, class_index]
+                predict_boxes.append(predict_box)
+
+    for batch_data in big_bounding_boxes:
+        for row_index in range(big_grids_num):
+            for col_index in range(big_grids_num):
+                big_gird_predict = batch_data[row_index][col_index]
+                max_confidence_index = np.argmax(big_gird_predict[::, 4])
+                big_predict = big_gird_predict[max_confidence_index]
+                confidence = round(big_predict[4], 2)
+                if confidence < confidence_threshold:
+                    continue
+                center_x = (col_index + big_predict[0]) * middle_downsample
+                center_y = (row_index + big_predict[1]) * middle_downsample
+                width = anchor_boxes[3 + max_confidence_index][0] * math.pow(math.e, big_predict[2])
+                height = anchor_boxes[3 + max_confidence_index][1] * math.pow(math.e, big_predict[3])
+                xmin = max(0, round(center_x - width / 2))
+                ymin = max(0, round(center_y - height / 2))
+                xmax = min(input_size - 1, round(center_x + width / 2))
+                ymax = min(input_size - 1, round(center_y + height / 2))
+                class_index = np.argmax(big_predict[5:])
+                predict_box = [xmin, ymin, xmax, ymax, confidence, class_index]
+                predict_boxes.append(predict_box)
+
+    while len(predict_boxes) != 0:
+        predict_boxes.sort(key=lambda box: box[4])
+        assured_box = predict_boxes[0]
+        temp = []
+        nms_boxes.append(assured_box)
+        i = 1
+        while i < len(predict_boxes):
+            if iou(assured_box, predict_boxes[i]) <= iou_threshold:
+                temp.append(predict_boxes[i])
+            i = i + 1
+        predict_boxes = temp
+
+    return nms_boxes
+
+def NMS(bounding_boxes,S=7,B=2,img_size=448,confidence_threshold=0.9,iou_threshold=0.5):
+
     predict_boxes = []
     nms_boxes = []
     grid_size = img_size / S
@@ -76,30 +181,35 @@ def NMS(bounding_boxes,S=7,B=2,img_size=448,confidence_threshold=0.2,iou_thresho
 
         return nms_boxes
 
-#------step:5 待测试的文件
+#------step:5 detection ------
 import cv2
+from utils import image
 import torchvision.transforms as transforms
-img_file_name = "./VOC2007/Val/JPEGImages/000197.jpg"
+img_file_name = "../DataSet/VOC2007+2012/Train/JPEGImages/000002.jpg"
+input_size = img_sizes[input_size_index]
+
 transform = transforms.Compose([
     transforms.ToTensor(), # height * width * channel -> channel * height * width
-    transforms.Normalize(mean=(0.5,0.5,0.5),std=(0.5,0.5,0.5))
+    transforms.Normalize(mean=(0.408, 0.448, 0.471), std=(0.242, 0.239, 0.234))
 ])
-img_data = cv2.imread(img_file_name)
-img_data = cv2.resize(img_data,(448,448),interpolation=cv2.INTER_AREA)
-train_data = transform(img_data).cuda()
+img = cv2.imread(img_file_name)
+img = image.resize_image_without_annotation(img, input_size, input_size)
+train_data = transform(img)
 train_data = train_data.unsqueeze(0)
-with torch.no_grad():
-    bounding_boxes = YOLO(train_data)
-NMS_boxes = NMS(bounding_boxes)
+train_data = train_data.to(device=device)
 
-img_data = cv2.resize(img_data,(896,896),interpolation=cv2.INTER_AREA)
+with torch.no_grad():
+    small_bounding_boxes, middle_bounding_boxes, big_bounding_boxes = YOLO_V3(train_data)
+NMS_boxes = NMS_MultiSacle(small_bounding_boxes, middle_bounding_boxes, big_bounding_boxes, input_size, anchor_boxes)
 
 for box in NMS_boxes:
     print(box)
-    img_data = cv2.rectangle(img_data, (box[0]*2,box[1]*2),(box[2]*2,box[3]*2),(0,255,0),1)
-    img_data = cv2.putText(img_data, "{}-{}".format(class_index_Name[box[5]],round(box[4],2)),(box[0]*2,box[1]*2),cv2.FONT_HERSHEY_PLAIN,1.5,(0,0,255),2)
-    print("class_name:{} confidence:{} class_probability:{}".format(class_index_Name[box[5]],round(box[4],2),box[5 + max(box[5:])]))
-cv2.imshow("img_detection",img_data)
+    img = cv2.rectangle(img, (box[0],box[1]),(box[2],box[3]),(0,255,0),1)
+    confidence = round(box[4],2)
+    img = cv2.putText(img, "{}-{}".format(class_index_name[box[5]],confidence),(box[0],box[1]),cv2.FONT_HERSHEY_PLAIN,1.5,(0,0,255),1)
+    print("class_name:{} confidence:{}".format(class_index_name[box[5]],confidence))
+
+cv2.imshow("img_detection",img)
 cv2.waitKey()
 cv2.destroyAllWindows()
 
