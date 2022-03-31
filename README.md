@@ -1,4 +1,4 @@
-# YOLOv1
+# YOLOv3
 复现YOLOv3算法。
 
 # Introduction 
@@ -14,7 +14,7 @@
 --------Labels 脚本生成的txt标注文件  
 ------Val 验证集  
 --------Images 图片  
---------Labels 脚本生成的txt标注文件 
+--------Labels 脚本生成的txt标注文件  
 ----create_cocolabel_from_json.py 用于生成本项目需要的COCO2017预训练数据集的脚本  
 --Detection 使用训练出来的模型进行检测  
 ----YOLOv3_CaptureDetection.py 使用训练出来的模型进行摄像头检测  
@@ -48,7 +48,11 @@
 To install requirements:  pip install -r requirements.txt  
 本项目使用的预训练数据集为COCO2017,检测训练使用的是VOC数据集。预训练入口为DarkNet53-Train.py,检测训练入口为YOLO_V3_Train.py。  
 
-// YOLOv1DarkNet53预训练
+// YOLOv3DarkNet53预训练
+
+// 下载项目  
+git clone git@github.com:ProgrammerZhujinming/YOLOv1.git  
+
 // COCO2017数据集下载
 wget -c http://images.cocodataset.org/zips/train2017.zip  
 unzip train2017.zip > /dev/null  
@@ -61,8 +65,7 @@ rm -f val2017.zip
 wget -c http://images.cocodataset.org/annotations/annotations_trainval2017.zip  
 unzip annotations_trainval2017.zip >> /dev/null  
 rm -f annotations_trainval2017.zip  
-// 下载项目  
-git clone git@github.com:ProgrammerZhujinming/YOLOv1.git  
+
 // 使用脚本生成训练用的COCO2017的数据集  
 python ./YOLOv3/DataSet/create_cocolabel_from_json.py --json_file="./annotations/instances_train2017.json" --class_file="./YOLOv1/DataSet/COCO2017/class.txt" --imgs_path="./train2017" --target_labels_path="./YOLOv1/DataSet/COCO2017/Train/Labels"  
 python ./YOLOv3/DataSet/create_cocolabel_from_json.py --json_file="./annotations/instances_val2017.json" --class_file="./YOLOv1/DataSet/COCO2017/class.txt" --imgs_path="./val2017" --target_labels_path="./YOLOv1/DataSet/COCO2017/Val/Labels"  
@@ -71,9 +74,6 @@ python ./YOLOv3/DataSet/create_cocolabel_from_json.py --json_file="./annotations
 rm -r annotations  
 rm -r train2017  
 rm -r val2017  
-
-cd YOLOv3/DataSet  
-
 
 // YOLOv3目标检测训练  
 // VOC目标检测数据集下载  
@@ -85,6 +85,19 @@ wget https://pjreddie.com/media/files/VOCtrainval_06-Nov-2007.tar
 tar -x VOCtrainval_06-Nov-2007.tar  
 rm -f VOCtrainval_06-Nov-2007.tar  
 
+//生成目标检测数据集
+python split_voc_train_val.py --voc_pth="../../VOCdevkit/VOC2007" --train_ratio="0.9"  --target_train_pth="./YOLOv3/DataSet/VOC2007+2012/Train" --target_val_pth="./YOLOv3/DataSet/VOC2007+2012/Val"
+python split_voc_train_val.py --voc_pth="../../VOCdevkit/VOC2012" --train_ratio="0.9" --target_train_pth="./YOLOv3/DataSet/VOC2007+2012/Train" --target_val_pth="./YOLOv3/DataSet/VOC2007+2012/Val"
+
+//DarkNet预训练
+cd ./YOLOv3
+python DarkNet53-Train.py
+
+//YOLOv3训练  注意您需要从保存的权重文件中提取最优的预训练部分 
+cd ./PreTrain
+python Extract_Final_Model.py
+cd ..
+python YOLOv3_Train.py
 
 # Evaluation  
 Loss/Accuracy等训练指标使用tensorboardX保存在日志文件里,性能存在波动是因为YOLOv3的多尺度训练技巧导致的，但是即便如此，性能的提升趋势还是显而易见的。
