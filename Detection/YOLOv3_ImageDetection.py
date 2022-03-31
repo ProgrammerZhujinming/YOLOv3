@@ -13,7 +13,7 @@ img_sizes = [320, 352, 384, 416, 448, 480, 512, 544, 576, 608]
 anchor_boxes = [[21, 29], [35, 80], [61, 45],  [68, 143], [124, 95], [130, 229], [226, 339], [298, 174], [452, 384]]
 weight_file = "../Train/weights/YOLO_V3_200.pth"
 #------step1: model------
-from Train.YOLO_V3_Model import YOLO_V3
+from Train.YOLOv3_Model import YOLO_V3
 from model import set_freeze_by_idxs, unfreeze_by_idxs
 YOLO_V3 = YOLO_V3(class_num=class_num)
 YOLO_V3.load_state_dict(torch.load(weight_file, map_location=torch.device("cpu"))["model"])

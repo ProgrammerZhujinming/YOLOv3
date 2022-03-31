@@ -16,7 +16,7 @@ batch_size = 16
 lr = 1e-4
 weight_decay = 5e-4
 momentum = 0.9
-pre_weight_file = "../PreTrain/weights/Darknet-53_60.pth"
+pre_weight_file = "./PreTrain/weights/Darknet-53_60.pth"
 class_num = 20
 batch_interval = 10
 epoch_interval = 10
@@ -34,47 +34,32 @@ anchor_boxes = [[21, 29], [35, 80], [61, 45],  [68, 143], [124, 95], [130, 229],
 
 #---------------step1:Dataset-------------------
 import torch
-from VOC_DataSet import VOCDataSet
-train_dataSet = VOCDataSet(imgs_path="../DataSet/VOC2007+2012/Train/JPEGImages",annotations_path="../DataSet/VOC2007+2012/Train/Annotations",classes_file="../DataSet/VOC2007+2012/class.data", is_train=True, class_num=class_num)
-val_dataSet = VOCDataSet(imgs_path="../DataSet/VOC2007+2012/Val/JPEGImages",annotations_path="../DataSet/VOC2007+2012/Val/Annotations",classes_file="../DataSet/VOC2007+2012/class.data", is_train=False, class_num=class_num)
+from Train.VOC_DataSet import VOCDataSet
+train_dataSet = VOCDataSet(imgs_path="./DataSet/VOC2007+2012/Train/JPEGImages",annotations_path="./DataSet/VOC2007+2012/Train/Annotations",classes_file="./DataSet/VOC2007+2012/class.data", is_train=True, class_num=class_num)
+val_dataSet = VOCDataSet(imgs_path="./DataSet/VOC2007+2012/Val/JPEGImages",annotations_path="./DataSet/VOC2007+2012/Val/Annotations",classes_file="./DataSet/VOC2007+2012/class.data", is_train=False, class_num=class_num)
 train_dataSet.setInputSize(base_img_size, anchor_boxes)
 val_dataSet.setInputSize(base_img_size, anchor_boxes)
 #from COCO_DataSet import COCODataSet
 #dataSet = COCODataSet(imgs_path="../DataSet/COCO2017/Train/JPEGImages",txts_path="../DataSet/COCO2017/Train/Labels", class_num=80)
 
 #---------------step2:Model-------------------
-from YOLO_V3_Model import YOLO_V3
-from model import set_freeze_by_idxs, unfreeze_by_idxs
+from Train.YOLOv3_Model import YOLO_V3
+from utils.model import set_freeze_by_idxs, unfreeze_by_idxs
 YOLO = YOLO_V3(class_num=class_num).to(device=device)
 YOLO.initialize_weights(pre_weight_file)
 set_freeze_by_idxs(YOLO,[0, 1, 2, 3, 4])
 
 #---------------step3:LossFunction-------------------
-from YOLO_V3_LossFunction import YOLO_V3_Loss
+from Train.YOLOv3_LossFunction import YOLO_V3_Loss
 loss_function = YOLO_V3_Loss(anchor_boxes=anchor_boxes, class_num=class_num).to(device=device)
 loss_function.setImgSize(base_img_size, anchor_boxes)
 
 #---------------step4:Optimizer-------------------
 import torch.optim as optim
-#optimizer_Adam = optim.Adam(YOLO.parameters(),lr=1e-4,weight_decay=0.005)
 optimizer_SGD = optim.SGD(YOLO.parameters(),lr=lr,weight_decay=weight_decay, momentum=momentum)
-#使用余弦退火动态调整学习率
-#lr_reduce_scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer=optimizer_Adam , T_max=20, eta_min=1e-4, last_epoch=-1)
-#lr_reduce_scheduler = optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer=optimizer_Adam, T_0=2, T_mult=2)
 
 #--------------step5:Tensorboard Feature Map------------
-import torch.nn as nn
-import torchvision.utils as vutils
-def feature_map_visualize(img_data, writer):
-    img_data = img_data.unsqueeze(0)
-    img_grid = vutils.make_grid(img_data, normalize=True, scale_each=True)
-    for i,m in enumerate(YOLO.modules()):
-        if isinstance(m, nn.Conv2d) or isinstance(m, nn.BatchNorm2d) or \
-                isinstance(m, nn.ReLU) or isinstance(m, nn.MaxPool2d) or isinstance(m, nn.AdaptiveAvgPool2d):
-            img_data = m(img_data)
-            x1 = img_data.transpose(0,1)
-            img_grid = vutils.make_grid(x1, normalize=True, scale_each=True)
-            writer.add_image('feature_map_' + str(i), img_grid)
+from utils.model import feature_map_visualize
 
 #---------------step6:Train-------------------
 from tqdm import tqdm
@@ -85,7 +70,7 @@ if __name__ == '__main__':
 
     epoch = 0
     param_dict = {}
-    writer = SummaryWriter(logdir='./log', filename_suffix=' [' + str(epoch) + '~' + str(epoch + epoch_interval) + ']')
+    writer = SummaryWriter(logdir='./Train/log', filename_suffix=' [' + str(epoch) + '~' + str(epoch + epoch_interval) + ']')
 
     while epoch <= epoch_num:
 
@@ -377,7 +362,7 @@ if __name__ == '__main__':
             param_dict['model'] = YOLO.state_dict()
             param_dict['optim'] = optimizer_SGD
             param_dict['epoch'] = epoch
-            torch.save(param_dict, './weights/YOLO_V3_' + str(epoch) + '.pth')
+            torch.save(param_dict, './Train/weights/YOLO_V3_' + str(epoch) + '.pth')
             writer.close()
             writer = SummaryWriter(logdir='log',
                                    filename_suffix='[' + str(epoch) + '~' + str(epoch + epoch_interval) + ']')

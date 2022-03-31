@@ -1,6 +1,7 @@
 #---------------step0:Common Definition-----------------
 import torch
 import torch.nn as nn
+from utils.model import accuracy
 from torch.utils.data import DataLoader
 if torch.cuda.is_available():
     device = torch.device('cuda:0')
@@ -8,66 +9,41 @@ if torch.cuda.is_available():
 else:
     device = torch.device('cpu')
 
+param_pth = "./PreTrain/weights/Darknet-53_1.pth"
+param_dict = torch.load(param_pth, map_location=torch.device("cpu"))
+epoch = param_dict['epoch']
+min_val_loss = param_dict['min_val_loss']
+optimizer = param_dict['optim']
 lr = 3e-4
 img_size = 256
 momentum = 0.9
-batch_size = 32
-epoch_num = 500
+batch_size = 16
+epoch_num = 1000
 weight_decay = 5e-4
-min_val_loss = 9999999999
-epoch_interval = 10
+epoch_interval = 1
 class_num = 80
 num_workers = 4
 
-def accuracy(output, target, topk=(1, 5)):
-
-    maxk = max(topk)
-    batch_size = target.size(0)
-    _, pred = output.topk(maxk, 1, True, True)
-    pred = pred.t()
-    correct = pred.eq(target.view(1, -1).expand_as(pred)).contiguous()
-    res = []
-    for k in topk:
-        correct_k = correct[:k].view(-1).float().sum(0, keepdim=True)
-        res.append(correct_k / batch_size)
-    return res
-
 #---------------step1:Dataset-------------------
-#from ImageNet_DataSet import ImageNetMini
-#dataSet = ImageNetMini(dataSetDir="../DataSet/imagenet-mini/train",classesFilePath="../DataSet/imagenet-mini/classDict.pth", img_size=256)
-#from VOC_Classify import voc_classify
-#dataSet = voc_classify(imgs_path="../DataSet/VOC2007+2012/Train/JPEGImages", annotations_path="../DataSet/VOC2007+2012/Train/Annotations", classes_file="../DataSet/VOC2007+2012/Train/class.data")
-from COCO_Classify import  coco_classify
-train_dataSet = coco_classify(imgs_path="../DataSet/COCO2017/Train/Images", txts_path= "../DataSet/COCO2017/Train/Labels", is_train=True)
-val_dataSet = coco_classify(imgs_path="../DataSet/COCO2017/Val/Images", txts_path= "../DataSet/COCO2017/Val/Labels", is_train=False)
+from PreTrain.COCO_Classify import  coco_classify
+train_dataSet = coco_classify(imgs_path="./DataSet/COCO2017/Train/Images", txts_path="./DataSet/COCO2017/Train/Labels", is_train=True)
+val_dataSet = coco_classify(imgs_path="./DataSet/COCO2017/Val/Images", txts_path="./DataSet/COCO2017/Val/Labels", is_train=False)
+
 #---------------step2:Model-------------------
-from DarkNet53 import DarkNet53
-darkNet53 = DarkNet53(class_num=class_num).to(device=device)
-darkNet53.weight_init()
+from PreTrain.DarkNet53 import DarkNet53
+darkNet53 = DarkNet53(class_num=class_num)
+darkNet53.load_state_dict(param_dict['model'])
+darkNet53 = darkNet53.to(device=device)
 
 #---------------step3:LossFunction-------------------
 loss_function = nn.CrossEntropyLoss().to(device=device)
 
 #---------------step4:Optimizer-------------------
 import torch.optim as optim
-#optimizer_Adam = optim.Adam(darkNet53.parameters(),lr=lr,weight_decay=weight_decay)
 optimizer = optim.SGD(darkNet53.parameters(), lr=lr, weight_decay=weight_decay, momentum=momentum)
-#使用余弦退火动态调整学习率
-#lr_reduce_scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer=optimizer_Adam , T_max=20, eta_min=1e-4, last_epoch=-1)
-#lr_reduce_scheduler = optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer=optimizer_Adam, T_0=2, T_mult=2)
 
 #--------------step5:Tensorboard Feature Map------------
-import torchvision.utils as vutils
-def feature_map_visualize(img_data, writer):
-    img_data = img_data.unsqueeze(0)
-    img_grid = vutils.make_grid(img_data, normalize=True, scale_each=True)
-    for i,m in enumerate(darkNet53.modules()):
-        if isinstance(m, nn.Conv2d) or isinstance(m, nn.BatchNorm2d) or \
-                isinstance(m, nn.ReLU) or isinstance(m, nn.MaxPool2d) or isinstance(m, nn.AdaptiveAvgPool2d):
-            img_data = m(img_data)
-            x1 = img_data.transpose(0,1)
-            img_grid = vutils.make_grid(x1, normalize=True, scale_each=True)
-            writer.add_image('feature_map_' + str(i), img_grid)
+from utils.model import feature_map_visualize
 
 #---------------step6:Train-------------------
 from tqdm import tqdm
@@ -78,7 +54,7 @@ if __name__ == "__main__":
 
     param_dict = {}
 
-    writer = SummaryWriter(logdir='./log', filename_suffix=' [' + str(epoch) + '~' + str(epoch + epoch_interval) + ']')
+    writer = SummaryWriter(logdir='./PreTrain/log', filename_suffix=' [' + str(epoch) + '~' + str(epoch + epoch_interval) + ']')
 
     while epoch < epoch_num:
 
@@ -120,7 +96,7 @@ if __name__ == "__main__":
                                                                           round(top5_acc, 4), refresh=True))
                 tbar.update(1)
 
-                # feature_map_visualize(train_data[0][0], writer)
+                # feature_map_visualize(darkNet53, train_data[0][0], writer)
                 # print("batch_index : {} ; batch_loss : {}".format(batch_index, batch_loss))
             print(
                 "train-mean: batch_loss:{} batch_top1_acc:{} batch_top5_acc:{}".format(round(epoch_train_loss / train_loader.__len__(), 4), round(
@@ -157,7 +133,7 @@ if __name__ == "__main__":
                                                                             round(top5_acc, 4), refresh=True))
                     tbar.update(1)
 
-            # feature_map_visualize(train_data[0][0], writer)
+                # feature_map_visualize(darkNet53, train_data[0][0], writer)
                 # print("batch_index : {} ; batch_loss : {}".format(batch_index, batch_loss))
             print(
                 "train-mean: batch_loss:{} batch_top1_acc:{} batch_top5_acc:{}".format(round(epoch_val_loss / val_loader.__len__(), 4), round(
@@ -174,7 +150,7 @@ if __name__ == "__main__":
             param_dict['model'] = darkNet53.state_dict()
             param_dict['optim'] = optimizer
             param_dict['epoch'] = epoch
-            torch.save(param_dict, './weights/Darknet-53_' + str(epoch) + '.pth')
+            torch.save(param_dict, './PreTrain/weights/Darknet-53_' + str(epoch) + '.pth')
             writer.close()
             writer = SummaryWriter(logdir='log', filename_suffix='[' + str(epoch) + '~' + str(epoch + epoch_interval) + ']')
         print("epoch : {} ; train-loss : {}".format(epoch, {epoch_train_loss}))
@@ -184,9 +160,4 @@ if __name__ == "__main__":
                 writer.add_histogram(name + '_grad', layer, epoch)
 
         writer.add_scalar('Train/Loss_sum', epoch_train_loss, epoch)
-        writer.add_scalar('Train/Top_Acc_1', epoch_train_top1_acc / train_loader.__len__(), epoch)
-        writer.add_scalar('Train/Top_Acc_5', epoch_train_top5_acc / train_loader.__len__(), epoch)
         writer.add_scalar('Val/Loss_sum', epoch_val_loss, epoch)
-        writer.add_scalar('Val/Top_Acc_1', epoch_val_top1_acc / val_loader.__len__(), epoch)
-        writer.add_scalar('Val/Top_Acc_5', epoch_val_top5_acc / val_loader.__len__(), epoch)
-    writer.close()

@@ -1,3 +1,31 @@
+#------ accuracy ------
+def accuracy(output, target, topk=(1, 5)):
+
+    maxk = max(topk)
+    batch_size = target.size(0)
+    _, pred = output.topk(maxk, 1, True, True)
+    pred = pred.t()
+    correct = pred.eq(target.view(1, -1).expand_as(pred)).contiguous()
+    res = []
+    for k in topk:
+        correct_k = correct[:k].view(-1).float().sum(0, keepdim=True)
+        res.append(correct_k / batch_size)
+    return res
+
+#------ feature map ------
+import torch.nn as nn
+import torchvision.utils as vutils
+def feature_map_visualize(model, img_data, writer):
+    img_data = img_data.unsqueeze(0)
+    img_grid = vutils.make_grid(img_data, normalize=True, scale_each=True)
+    for i,m in enumerate(model.modules()):
+        if isinstance(m, nn.Conv2d) or isinstance(m, nn.BatchNorm2d) or \
+                isinstance(m, nn.ReLU) or isinstance(m, nn.MaxPool2d) or isinstance(m, nn.AdaptiveAvgPool2d):
+            img_data = m(img_data)
+            x1 = img_data.transpose(0,1)
+            img_grid = vutils.make_grid(x1, normalize=True, scale_each=True)
+            writer.add_image('feature_map_' + str(i), img_grid)
+
 #------freeze backbone------
 from collections.abc import Iterable
 def set_freeze_by_names(model, layer_names, freeze=True):

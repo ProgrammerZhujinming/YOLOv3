@@ -1,7 +1,7 @@
 import torch.nn as nn
 import torch.nn.functional as F
 import torch
-from DarkNet53 import CBL, ResUnit, ResX
+from PreTrain.DarkNet53 import CBL, ResUnit, ResX
 
 class ConventionSet(nn.Module):
     def __init__(self, in_channels, out_channels_1, out_channels_2, out_channels_3, out_channels_4, out_channels):
@@ -109,8 +109,8 @@ class YOLO_V3(nn.Module):
             CBL(1024, 512, 1, 1, 0),
             CBL(512, 1024, 3, 1, 1),
             CBL(1024, 512, 1, 1, 0),
-            CBL(512, 1024, 3, 1, 1),
-            CBL(1024, 3 * (5 + class_num), 1, 1, 0, inplace=False),
+            CBL(512, 1024, 3, 1, 1, need_bn = False),
+            CBL(1024, 3 * (5 + class_num), 1, 1, 0, inplace=False, need_bn = False),
         )
 
         self.neck_bigger_middle = nn.Sequential(
@@ -125,8 +125,8 @@ class YOLO_V3(nn.Module):
             CBL(512, 256, 1, 1, 0),
             CBL(256, 512, 3, 1, 1),
             CBL(512, 256, 1, 1, 0),
-            CBL(256, 512, 3, 1, 1),
-            CBL(512, 3 * (5 + class_num), 1, 1, 0, inplace=False),
+            CBL(256, 512, 3, 1, 1, need_bn = False),
+            CBL(512, 3 * (5 + class_num), 1, 1, 0, inplace=False, need_bn = False),
         )
 
         self.neck_middle_small = nn.Sequential(
@@ -141,8 +141,8 @@ class YOLO_V3(nn.Module):
             CBL(256, 128, 1, 1, 0),
             CBL(128, 256, 3, 1, 1),
             CBL(256, 128, 1, 1, 0),
-            CBL(128, 256, 3, 1, 1),
-            CBL(256, 3 * (5 + self.class_num), 1, 1, 0, inplace=False),
+            CBL(128, 256, 3, 1, 1, need_bn = False),
+            CBL(256, 3 * (5 + self.class_num), 1, 1, 0, inplace=False, need_bn = False),
         )
 
         self.sigmoid = nn.Sigmoid()

@@ -15,7 +15,7 @@ batch_size = 16
 lr = 1e-4
 weight_decay = 5e-4
 momentum = 0.9
-weight_file = "./weights/YOLO_V3_200.pth"
+weight_file = "./Train/weights/YOLO_V3_200.pth"
 param_dict = torch.load(weight_file, map_location=torch.device("cpu"))
 min_val_loss = param_dict['min_val_loss']
 lr = 1e-4
@@ -33,20 +33,20 @@ anchor_boxes = [[21, 29], [35, 80], [61, 45],  [68, 143], [124, 95], [130, 229],
 
 #---------------step1:Dataset-------------------
 import torch
-from VOC_DataSet import VOCDataSet
+from Train.VOC_DataSet import VOCDataSet
 train_dataSet = VOCDataSet(imgs_path="../DataSet/VOC2007+2012/Train/JPEGImages",annotations_path="../DataSet/VOC2007+2012/Train/Annotations",classes_file="../DataSet/VOC2007+2012/class.data", is_train=True, class_num=class_num)
 val_dataSet = VOCDataSet(imgs_path="../DataSet/VOC2007+2012/Val/JPEGImages",annotations_path="../DataSet/VOC2007+2012/Val/Annotations",classes_file="../DataSet/VOC2007+2012/class.data", is_train=False, class_num=class_num)
 train_dataSet.setInputSize(base_img_size, anchor_boxes)
 val_dataSet.setInputSize(base_img_size, anchor_boxes)
 
 #---------------step2:Model-------------------
-from YOLO_V3_Model import YOLO_V3
-from model import set_freeze_by_idxs, unfreeze_by_idxs
+from Train.YOLOv3_Model import YOLO_V3
+from utils.model import set_freeze_by_idxs, unfreeze_by_idxs
 YOLO = YOLO_V3(class_num=class_num).to(device=device)
 YOLO.load_state_dict(param_dict['model'])
 
 #---------------step3:LossFunction-------------------
-from YOLO_V3_LossFunction import YOLO_V3_Loss
+from Train.YOLOv3_LossFunction import YOLO_V3_Loss
 loss_function = YOLO_V3_Loss(anchor_boxes=anchor_boxes, class_num=class_num).to(device=device)
 loss_function.setImgSize(base_img_size, anchor_boxes)
 
@@ -55,18 +55,7 @@ import torch.optim as optim
 optimizer_SGD = optim.SGD(YOLO.parameters(),lr=lr,weight_decay=weight_decay, momentum=momentum)
 
 #--------------step5:Tensorboard Feature Map------------
-import torch.nn as nn
-import torchvision.utils as vutils
-def feature_map_visualize(img_data, writer):
-    img_data = img_data.unsqueeze(0)
-    img_grid = vutils.make_grid(img_data, normalize=True, scale_each=True)
-    for i,m in enumerate(YOLO.modules()):
-        if isinstance(m, nn.Conv2d) or isinstance(m, nn.BatchNorm2d) or \
-                isinstance(m, nn.ReLU) or isinstance(m, nn.MaxPool2d) or isinstance(m, nn.AdaptiveAvgPool2d):
-            img_data = m(img_data)
-            x1 = img_data.transpose(0,1)
-            img_grid = vutils.make_grid(x1, normalize=True, scale_each=True)
-            writer.add_image('feature_map_' + str(i), img_grid)
+from utils.model import feature_map_visualize
 
 #---------------step6:Train-------------------
 from tqdm import tqdm
@@ -76,7 +65,7 @@ from torch.utils.data import DataLoader
 if __name__ == '__main__':
 
     param_dict = {}
-    writer = SummaryWriter(logdir='./log', filename_suffix=' [' + str(epoch) + '~' + str(epoch + epoch_interval) + ']')
+    writer = SummaryWriter(logdir='./Train/log', filename_suffix=' [' + str(epoch) + '~' + str(epoch + epoch_interval) + ']')
 
     while epoch <= epoch_num:
 
@@ -372,7 +361,7 @@ if __name__ == '__main__':
             param_dict['model'] = YOLO.state_dict()
             param_dict['optim'] = optimizer_SGD
             param_dict['epoch'] = epoch
-            torch.save(param_dict, './weights/YOLO_V3_' + str(epoch) + '.pth')
+            torch.save(param_dict, './Train/weights/YOLO_V3_' + str(epoch) + '.pth')
             writer.close()
             writer = SummaryWriter(logdir='log',
                                    filename_suffix='[' + str(epoch) + '~' + str(epoch + epoch_interval) + ']')

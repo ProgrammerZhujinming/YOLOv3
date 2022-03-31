@@ -1,17 +1,16 @@
 import torch
 import torch.nn as nn
-
 class CBL(nn.Module):
-    def __init__(self, in_channels, out_channels, kernal_size, stride, padding, inplace=True):
+    def __init__(self, in_channels, out_channels, kernal_size, stride, padding, inplace=True, need_bn = True):
         super(CBL, self).__init__()
-        self.conv = nn.Sequential(
-            nn.Conv2d(in_channels, out_channels, kernal_size, stride, padding, bias=False),
-            nn.BatchNorm2d(out_channels),
-            nn.LeakyReLU(0.1, inplace=inplace),
-        )
+        self.conv = nn.Conv2d(in_channels, out_channels, kernal_size, stride, padding, bias=not need_bn)
+        self.leaky_relu = nn.LeakyReLU(0.1, inplace=inplace)
+        self.need_bn = need_bn
+        if self.need_bn:
+            self.bn = nn.BatchNorm2d(out_channels)
 
     def forward(self, x):
-        return self.conv(x)
+        return self.bn(self.leaky_relu(self.conv(x))) if self.need_bn else self.leaky_relu(self,conv(x))
 
     def weight_init(self):
         for m in self.modules():

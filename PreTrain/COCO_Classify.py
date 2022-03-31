@@ -2,7 +2,6 @@ import cv2
 import os
 import time
 import random
-import imagesize
 import numpy as np
 from utils import image
 from torch.utils.data import Dataset
@@ -11,6 +10,7 @@ import torchvision.transforms as transforms
 class coco_classify(Dataset):
     def __init__(self,imgs_path = "../DataSet/COCO2017/Train/Images", txts_path = "../DataSet/COCO2017/Train/Labels", is_train = True, edge_threshold=200, class_num=80, input_size=256):  # input_size:输入图像的尺度
         img_names = os.listdir(txts_path)
+        #print("img_names:{}".format(img_names))
         self.is_train = is_train
 
         self.transform_common = transforms.Compose([
@@ -24,6 +24,8 @@ class coco_classify(Dataset):
         for img_name in img_names:
             img_path = os.path.join(imgs_path, img_name.replace(".txt", ".jpg"))
             txt_path = os.path.join(txts_path, img_name)
+
+            #print("imgs_path:{} img_name:{} txts_path:{} img_pth:{} txt_pth:{}".format(imgs_path, img_name, txts_path, img_path, txt_path))
 
             coords = []
 
@@ -88,3 +90,28 @@ class coco_classify(Dataset):
 
     def __len__(self):
         return len(self.train_data)
+
+'''
+from torch.utils.data import DataLoader
+from pytorch_lightning import LightningDataModule
+class tpu_coco_classify(LightningDataModule):
+    def __init__(self, batch_size, num_worker, ):
+        super().__init__()
+        self.batch_size = batch_size
+        self.num_worker = num_worker
+
+
+    def prepare_data(self):
+        pass
+
+    def setup(self, stage=None):
+        pass
+
+
+    def train_dataloader(self):
+        return DataLoader(self.mnist_train, batch_size=self.batch_size, num_workers=self.num_worker, )
+
+    def val_dataloader(self):
+        return DataLoader(self.mnist_val, batch_size=BATCH_SIZE)
+        
+'''

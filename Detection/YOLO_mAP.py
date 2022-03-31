@@ -7,7 +7,7 @@ dataSet = VOCDataSet(imgs_dir="./VOC2007/Train/JPEGImages", annotations_dir="./V
 dataLoader = DataLoader(dataSet, batch_size=256, num_workers=0)
 
 # ---------------step2:Model 模型-------------------
-from Train.YOLO_V3_Model import YOLO_V1
+from Train.YOLOv3_Model import YOLO_V1
 YOLO = YOLO_V1()
 YOLO.load_state_dict(torch.load('./YOLO_V1_400.pth')['model'])
 YOLO = YOLO.cuda(device=0)

@@ -9,7 +9,7 @@ dataLoader = DataLoader(dataSet, batch_size=32, num_workers=0)
 ground_class_bbox = dataSet.class_bboxes #ground_truth对应的所有box
 
 # ---------------step2:Model 模型-------------------
-from Train.YOLO_V3_Model import YOLO_V1
+from Train.YOLOv3_Model import YOLO_V1
 YOLO = YOLO_V1()
 YOLO.load_state_dict(torch.load('./YOLO_V1_1100.pth')['model'])
 YOLO = YOLO.cuda(device=0)

@@ -1,5 +1,5 @@
 #------step1: 导入网络------
-from Train.YOLO_V3_Model import YOLO_V1
+from Train.YOLOv3_Model import YOLO_V1
 YOLO = YOLO_V1().cuda()
 
 #------step:2 读取权重文件------

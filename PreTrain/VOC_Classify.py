@@ -1,12 +1,13 @@
-from torch.utils.data import Dataset
-import xml.etree.ElementTree as ET
-import torchvision.transforms as transforms
-import cv2
 import os
+import cv2
 import time
 import random
-from utils import image
 import numpy as np
+from utils import image
+import xml.etree.ElementTree as ET
+from torch.utils.data import Dataset
+import torchvision.transforms as transforms
+
 class voc_classify(Dataset):
     def __init__(self,imgs_path = "../DataSet/VOC2007+2012/Train/JPEGImages", annotations_path = "../DataSet/VOC2007+2012/Train/Annotations", classes_file = "../DataSet/VOC2007+2012/class.data", edge_threshold=200, img_size=256):  # input_size:输入图像的尺度
         img_names = os.listdir(imgs_path)

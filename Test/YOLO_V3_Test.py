@@ -1,5 +1,5 @@
 # 网络加载
-from Train.YOLO_V3_Model import YOLO_V1
+from Train.YOLOv3_Model import YOLO_V1
 YOLO = YOLO_V1()
 import torch
 YOLO.load_state_dict(torch.load('./YOLO_V1_300.pth'))
