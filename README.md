@@ -2,8 +2,8 @@
 复现YOLOv3算法。
 
 # Introduction 
-个人博客YOLOv3算法详解地址：https://blog.csdn.net/qq_39304630/article/details/121373526?ops_request_misc=%257B%2522request%255Fid%2522%253A%2522164870519816780264020848%2522%252C%2522scm%2522%253A%252220140713.130102334.pc%255Fblog.%2522%257D&request_id=164870519816780264020848&biz_id=0&utm_medium=distribute.pc_search_result.none-task-blog-2
-个人博客YOLOv3论文精读地址：https://blog.csdn.net/qq_39304630/article/details/121341732?ops_request_misc=%257B%2522request%255Fid%2522%253A%2522164870519816780264020848%2522%252C%2522scm%2522%253A%252220140713.130102334.pc%255Fblog.%2522%257D&request_id=164870519816780264020848&biz_id=0&utm_medium=distribute.pc_search_result.none-task-blog-2
+个人博客YOLOv3算法详解地址：https://blog.csdn.net/qq_39304630/article/details/121373526?ops_request_misc=%257B%2522request%255Fid%2522%253A%2522164870519816780264020848%2522%252C%2522scm%2522%253A%252220140713.130102334.pc%255Fblog.%2522%257D&request_id=164870519816780264020848&biz_id=0&utm_medium=distribute.pc_search_result.none-task-blog-2  
+个人博客YOLOv3论文精读地址：https://blog.csdn.net/qq_39304630/article/details/121341732?ops_request_misc=%257B%2522request%255Fid%2522%253A%2522164870519816780264020848%2522%252C%2522scm%2522%253A%252220140713.130102334.pc%255Fblog.%2522%257D&request_id=164870519816780264020848&biz_id=0&utm_medium=distribute.pc_search_result.none-task-blog-2  
 
 # Project Instruction  
 [注]：不在下面列表中写出的部分 是暂时没有特殊用处的部分
