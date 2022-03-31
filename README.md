@@ -53,6 +53,9 @@ To install requirements:  pip install -r requirements.txt
 // 下载项目  
 git clone git@github.com:ProgrammerZhujinming/YOLOv1.git  
 
+//anaconda虚拟环境创建
+conda env create -f DeepLearning.yaml
+
 // COCO2017数据集下载
 wget -c http://images.cocodataset.org/zips/train2017.zip  
 unzip train2017.zip > /dev/null  
