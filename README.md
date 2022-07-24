@@ -48,15 +48,15 @@
 To install requirements:  pip install -r requirements.txt  
 本项目使用的预训练数据集为COCO2017,检测训练使用的是VOC数据集。预训练入口为DarkNet53-Train.py,检测训练入口为YOLO_V3_Train.py。  
 
-// YOLOv3DarkNet53预训练
+// YOLOv3DarkNet53预训练  
 
 // 下载项目  
 git clone git@github.com:ProgrammerZhujinming/YOLOv1.git  
 
-//anaconda虚拟环境创建
-conda env create -f DeepLearning.yaml
+//anaconda虚拟环境创建  
+conda env create -f DeepLearning.yaml  
 
-// COCO2017数据集下载
+// COCO2017数据集下载  
 wget -c http://images.cocodataset.org/zips/train2017.zip  
 unzip train2017.zip > /dev/null  
 rm -f train2017.zip  
@@ -88,27 +88,27 @@ wget https://pjreddie.com/media/files/VOCtrainval_06-Nov-2007.tar
 tar -x VOCtrainval_06-Nov-2007.tar  
 rm -f VOCtrainval_06-Nov-2007.tar  
 
-//生成目标检测数据集
+//生成目标检测数据集  
 python split_voc_train_val.py --voc_pth="../../VOCdevkit/VOC2007" --train_ratio="0.9"  --target_train_pth="./YOLOv3/DataSet/VOC2007+2012/Train" --target_val_pth="./YOLOv3/DataSet/VOC2007+2012/Val"
 python split_voc_train_val.py --voc_pth="../../VOCdevkit/VOC2012" --train_ratio="0.9" --target_train_pth="./YOLOv3/DataSet/VOC2007+2012/Train" --target_val_pth="./YOLOv3/DataSet/VOC2007+2012/Val"
 
-//DarkNet预训练
+//DarkNet预训练  
 cd ./YOLOv3
 python DarkNet53-Train.py
 
-//YOLOv3训练  注意您需要从保存的权重文件中提取最优的预训练部分 
+//YOLOv3训练  注意您需要从保存的权重文件中提取最优的预训练部分   
 cd ./PreTrain
 python Extract_Final_Model.py
 cd ..
 python YOLOv3_Train.py
 
 # Evaluation  
-Loss/Accuracy等训练指标使用tensorboardX保存在日志文件里,性能存在波动是因为YOLOv3的多尺度训练技巧导致的，但是即便如此，性能的提升趋势还是显而易见的。
+Loss/Accuracy等训练指标使用tensorboardX保存在日志文件里,性能存在波动是因为YOLOv3的多尺度训练技巧导致的，但是即便如此，性能的提升趋势还是显而易见的。  
 
 # Pre-trained Models  
 预训练模型保存在PreTrain/weights里。  
 
-# Results
+# Results  
 模型结果  
 ![avatar](./results/1.png)  
 
@@ -118,15 +118,9 @@ Loss/Accuracy等训练指标使用tensorboardX保存在日志文件里,性能存
 
 ![avatar](./results/4.png)  
 
-# Contributing
+# Contributing  
 
-
-
-
-
-
-
-# YOLOv3 Update Record
+# YOLOv3 Update Record  
 项目说明：  
 1.tensorboard功能需要PyTorch版本在1.1.0及以上，在项目目录下执行指令tensorboard --logdir=log即可启动(如果出现无法找到命令的错误，则可能需要安装tensorflow)  
 2.相应需要查看自己的cuda版本是否支持对应的PyTorch版本  
@@ -155,5 +149,5 @@ Loss/Accuracy等训练指标使用tensorboardX保存在日志文件里,性能存
 6.当前Detection中的视频、摄像头、图像检测已经全部适配笔者实现的YOLOv3。  
 7.修复了平均iou显示错误的问题。  
 
-## 更新日志 3-3
+## 更新日志 3-3  
 1.笔者突然发现自己实现的YOLOv3存在一个问题，就是在predict部分使用Conv2d实际上不应该使用BN层来拉回分布，即在三种尺度下两个用于预测的卷积层是不带bn的，这可能会影响预测结果，已做调整。
