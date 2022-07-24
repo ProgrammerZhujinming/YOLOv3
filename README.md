@@ -51,7 +51,7 @@ To install requirements:  pip install -r requirements.txt
 // YOLOv3DarkNet53预训练  
 
 // 下载项目  
-git clone git@github.com:ProgrammerZhujinming/YOLOv1.git  
+git clone git@github.com:ProgrammerZhujinming/YOLOv3.git  
 
 //anaconda虚拟环境创建  
 conda env create -f DeepLearning.yaml  
